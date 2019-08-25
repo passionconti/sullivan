@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  db:
+    env_file: ".env"
+    restart: always
+    image: postgres:10.4-alpine
+    volumes:
+      - ./shared/data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+  app:
+    env_file: ".env"
+    restart: always
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - 5000:5000
+    depends_on:
+      - db
+    working_dir: /app
+    environment:
+      FLASK_APP: app.py
+      FLASK_RUN_HOST: 0.0.0.0

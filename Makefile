@@ -1,3 +1,5 @@
-
 sh:
-	docker run -d -p 5000:5000 sullivan
+	docker-compose run --rm --service-ports app bash
+
+clean:
+	docker-compose down
