@@ -1,13 +1,56 @@
-from flask import Flask
+import json
+
+from flask import Flask, render_template, request, jsonify
+from pusher import Pusher
+
+from config import Pusher as PusherConfig
 
 
+# create flask app
 app = Flask(__name__)
 
 
+# configure pusher object
+pusher = Pusher(
+    app_id=PusherConfig.app_id,
+    key=PusherConfig.key,
+    secret=PusherConfig.secret,
+    cluster=PusherConfig.cluster,
+    ssl=PusherConfig.ssl,
+)
+
+
+# index route, shows index.html view
 @app.route('/')
-def main():
-    return 'To Do App First'
+def index():
+  return render_template('index.html', config=PusherConfig)
 
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+# endpoint for storing todo item
+@app.route('/add-todo', methods = ['POST'])
+def addTodo():
+  data = json.loads(request.data) # load JSON data from request
+  pusher.trigger('todo', 'item-added', data) # trigger `item-added` event on `todo` channel
+  return jsonify(data)
+
+
+# endpoint for deleting todo item
+@app.route('/remove-todo/<item_id>')
+def removeTodo(item_id):
+  data = {'id': item_id }
+  pusher.trigger('todo', 'item-removed', data)
+  return jsonify(data)
+
+
+# endpoint for updating todo item
+@app.route('/update-todo/<item_id>', methods = ['POST'])
+def updateTodo(item_id):
+  data = {
+    'id': item_id,
+    'completed': json.loads(request.data).get('completed', 0)
+  }
+  pusher.trigger('todo', 'item-updated', data)
+  return jsonify(data)
+
+# run Flask app in debug mode
+app.run(debug=True)
